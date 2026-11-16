@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  fullName       String
+  email          String    @unique
+  phone          String?
+  avatar         String?
+  passwordHash   String
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+  role           String    @default("CUSTOMER")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  orders         Order[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  image     String
+  itemCount Int       @default(0)
+  createdAt DateTime  @default(now())
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  name          String
+  subtitle      String
+  categoryId    String
+  category      Category    @relation(fields: [categoryId], references: [id])
+  price         Float
+  originalPrice Float?
+  rating        Float       @default(5.0)
+  reviewsCount  Int         @default(0)
+  image         String
+  inStock       Boolean     @default(true)
+  isNewArrival  Boolean     @default(false)
+  isBestSeller  Boolean     @default(false)
+  voltage       String?
+  power         String?
+  warranty      String
+  dimensions    String?
+  grade         String?
+  description   String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id])
+  salonName         String
+  contactPerson     String
+  phone             String
+  address           String
+  city              String      @default("Addis Ababa")
+  totalAmount       Float
+  paymentMethod     String
+  transactionNumber String
+  receiptImageUrl   String?
+  status            String      @default("PENDING_VERIFICATION")
+  rejectionReason   String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  items             OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  price     Float
+
+  @@map("order_items")
+}
+
+model BankSetting {
+  id            String   @id @default("primary")
+  telebirrPhone String
+  telebirrName  String
+  cbeAccount    String
+  cbeName       String
+  cbeBranch     String
+  updatedAt     DateTime @updatedAt
+
+  @@map("bank_settings")
+}
+
+model WelcomeSetting {
+  id                     String   @id @default("primary")
+  brandLogoImage         String   @default("/yolanda-logo.jpg")
+  brandName              String   @default("Yolanda Salon Equipment")
+  brandSubtitle          String   @default("Salon & Makeup Equipment")
+  heroBadge              String   @default("Wholesale Equipment")
+  heroTitleLine1         String   @default("Equipping Top Salons,")
+  heroTitleLine2         String   @default("Across Ethiopia.")
+  heroSubtitle           String   @default("Direct importer of commercial equipment for beauty salons & makeup studios.")
+  heroMotto              String   @default("Commercial Equipment ✦ For Beauty & Makeup Salons")
+  heroBgImage            String   @default("/hero-bg.jpg")
+  mobileHeroBgImage      String   @default("/mobile-welcome-hero.jpg")
+  pillarSectionTag       String   @default("Built For Ethiopian Salons")
+  pillarSectionTitle     String   @default("Why Top Salons Trust Yolanda")
+  pillarSectionSubtitle  String   @default("Directly imported commercial-grade equipment built for heavy daily salon use.")
+  pillar1Title           String   @default("220V Commercial Ready")
+  pillar1Desc            String   @default("Every steamer, hydra-facial machine, and styling chair is pre-calibrated for Ethiopian electrical standards with heavy-duty surge protection.")
+  pillar1Badge           String   @default("Tested for 220V/50Hz")
+  pillar2Title           String   @default("1-Year Warranty & Parts")
+  pillar2Desc            String   @default("We provide original replacement parts, certified technician inspection, and on-site warranty service in Addis Ababa so your salon never suffers downtime.")
+  pillar2Badge           String   @default("Local Technician Support")
+  pillar3Title           String   @default("Direct Salon Importer")
+  pillar3Desc            String   @default("Authentic, heavy-duty salon and makeup studio machines directly from certified manufacturers without middleman markups.")
+  pillar3Badge           String   @default("Verified Salon Quality")
+  howItWorksTitle        String   @default("How It Works")
+  step1Title             String   @default("Create Your Account")
+  step1Desc              String   @default("Register as a salon owner or beauty professional.")
+  step2Title             String   @default("Explore Equipment in ETB")
+  step2Desc              String   @default("Unlock wholesale pricing and detailed machine specs.")
+  step3Title             String   @default("Submit Salon Order")
+  step3Desc              String   @default("Submit your equipment request in seconds with your contact information.")
+  contactPhone           String   @default("+251 911 234 567")
+  contactTelegram        String   @default("https://t.me/yolandabeauty")
+  contactLocation        String   @default("Bole Medhanialem, Addis Ababa, Ethiopia")
+  contactHours           String   @default("Mon - Sat: 8:30 AM - 7:30 PM")
+  contactEmail           String   @default("contact@yolandabeauty.com")
+  footerDescription      String   @default("Ethiopia's premier distributor of commercial salon, spa, and beauty machines with genuine spare parts, local warranty, and technician support.")
+  socialInstagram        String   @default("https://instagram.com/yolandabeauty")
+  socialTiktok           String   @default("https://tiktok.com/@yolandabeauty")
+  socialFacebook         String   @default("https://facebook.com/yolandabeauty")
+  socialWhatsapp         String   @default("https://wa.me/251911234567")
+  footerService1         String   @default("1-Year Machine Warranty")
+  footerService2         String   @default("Direct Equipment Importer")
+  footerService3         String   @default("Fast Order Confirmation")
+  footerService4         String   @default("Bulk Order Pricing Discounts")
+  copyrightText          String   @default("© 2026 Yolanda Salon Equipment Importer. All rights reserved.")
+  updatedAt              DateTime @updatedAt
+
+  @@map("welcome_settings")
+}
+
