@@ -1515,7 +1515,7 @@ export default function AdminPage() {
                 )}
                 {/* Collapsed Absolute Notifier Badge (Zero layout disruption, pointer-events-none) */}
                 {isSidebarCollapsed && products.length > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black bg-white text-[#4F2D1C] font-mono shadow-[0_2px_6px_rgba(0,0,0,0.35)] flex items-center justify-center border border-white/40 pointer-events-none select-none z-20 leading-none">
+                  <span className="absolute top-0 right-0 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black bg-white text-[#4F2D1C] font-mono shadow-[0_2px_6px_rgba(0,0,0,0.35)] flex items-center justify-center border border-white/40 pointer-events-none select-none z-20 leading-none">
                     {products.length > 99 ? "99+" : products.length}
                   </span>
                 )}
@@ -1550,11 +1550,7 @@ export default function AdminPage() {
                 {/* Collapsed Absolute Notifier Badge (Zero layout disruption, pointer-events-none) */}
                 {isSidebarCollapsed && (metrics.pendingOrders > 0 || orders.length > 0) && (
                   <span
-                    className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black font-mono shadow-[0_2px_6px_rgba(0,0,0,0.35)] flex items-center justify-center border pointer-events-none select-none z-20 leading-none ${
-                      metrics.pendingOrders > 0
-                        ? "bg-rose-500 text-white border-white/50"
-                        : "bg-white/90 text-[#4F2D1C] border-white/40"
-                    }`}
+                    className="absolute top-0 right-0 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black font-mono shadow-[0_2px_6px_rgba(0,0,0,0.35)] flex items-center justify-center border border-white/40 pointer-events-none select-none z-20 leading-none bg-white text-[#4F2D1C]"
                   >
                     {metrics.pendingOrders > 0
                       ? metrics.pendingOrders > 99
@@ -3190,37 +3186,11 @@ export default function AdminPage() {
         {/* ===================== TAB 4: ORDERS ===================== */}
         {activeTab === "orders" && (
           <div className="animate-in fade-in duration-200 w-full max-w-full">
-            {/* Header Controls - Sticky Claymorphic Card with minimal gap to top nav bar */}
-            <div className="sticky -top-4 sm:-top-6 lg:-top-8 -mt-4 sm:-mt-6 lg:-mt-8 pt-1.5 pb-1 bg-[#FAF6F0] z-20">
-              <div className="bg-[#FAF6F0] py-2.5 px-4 sm:px-6 rounded-2xl sm:rounded-3xl border border-[#4F2D1C]/15 shadow-[0_10px_25px_-5px_rgba(79,45,28,0.08),inset_0_2px_4px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(79,45,28,0.05)] flex flex-col md:flex-row md:items-center gap-2.5 sm:gap-3">
-                {/* Title */}
-                <h1 className="text-base sm:text-lg font-serif font-bold text-[#4F2D1C] tracking-tight shrink-0">
-                  Manage your order
-                </h1>
-
-                {/* Search Bar */}
-                <div className="relative flex-1 w-full">
-                  <Search className="w-4 h-4 text-[#4F2D1C]/45 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={orderSearch}
-                    onChange={(e) => setOrderSearch(e.target.value)}
-                    placeholder="Search by order #, salon name, contact person, or phone..."
-                    className="w-full h-9 sm:h-10 pl-10 pr-9 bg-white rounded-xl text-xs text-[#4F2D1C] placeholder-[#4F2D1C]/45 focus:outline-none focus:border-[#4F2D1C]/40 border border-[#4F2D1C]/15 shadow-2xs font-medium"
-                  />
-                  {orderSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setOrderSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4F2D1C]/50 hover:text-[#4F2D1C] p-1 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
+            {/* Header Controls - Fixed Card on Mobile, Compact Card on Desktop */}
+            <div className="sticky -top-3 pt-1 pb-1 z-30 md:static md:p-0 bg-[#FAF6F0] mb-3 sm:mb-4">
+              <div className="w-full md:w-fit bg-[#FAF6F0] py-2 px-3 sm:py-2 sm:px-3 rounded-2xl border border-[#4F2D1C]/15 shadow-[0_8px_20px_-4px_rgba(79,45,28,0.09),inset_0_2px_4px_rgba(255,255,255,1),inset_0_-2px_4px_rgba(79,45,28,0.05)] flex items-center gap-2 sm:gap-2.5">
                 {/* 2 Filter Buttons Dropdowns (Side-by-Side on mobile, inline on desktop) */}
-                <div className="grid grid-cols-2 md:flex md:items-center gap-2 shrink-0">
+                <div className="grid grid-cols-2 md:flex md:items-center gap-2 sm:gap-2.5 w-full md:w-auto shrink-0">
                   {/* 1. Status Filter Dropdown */}
                   <div className="relative" ref={statusFilterRef}>
                     <button
@@ -5194,16 +5164,16 @@ export default function AdminPage() {
           type="button"
           onClick={catalogSubView === "categories" ? handleOpenAddCategory : handleOpenAddProduct}
           aria-label={catalogSubView === "categories" ? "New Category" : "Add Product"}
-          className="md:hidden fixed bottom-20 right-4 z-40 px-4 py-3 rounded-full text-xs font-bold flex items-center gap-1.5 bg-[#4F2D1C] text-white shadow-xl border border-[#2D1C14] shadow-[0_8px_20px_-3px_rgba(79,45,28,0.28),0_3px_6px_-1px_rgba(79,45,28,0.16)] active:scale-95 transition-all cursor-pointer"
+          className="md:hidden fixed bottom-22 right-4 z-40 px-4 py-3 rounded-full text-xs font-bold flex items-center gap-1.5 bg-[#4F2D1C] text-white shadow-xl border border-[#2D1C14] shadow-[0_8px_20px_-3px_rgba(79,45,28,0.28),0_3px_6px_-1px_rgba(79,45,28,0.16)] active:scale-95 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 text-white stroke-[2.5]" />
           <span>{catalogSubView === "categories" ? "New Category" : "Add Product"}</span>
         </button>
       )}
 
-      {/* 4. FIXED BOTTOM NAVIGATION BAR (Replaces Left Desktop Sidebar on Mobile) */}
-      <nav className="fixed md:hidden bottom-0 left-0 right-0 z-40 max-w-[430px] mx-auto bg-[#4F2D1C] text-[#FFFFFF] px-2 py-2 border-t border-white/10 shadow-[0_-8px_24px_rgba(45,28,20,0.28)] rounded-t-2xl">
-        <div className="grid grid-cols-4 gap-1">
+      {/* 4. FLOATING PILL BOTTOM NAVIGATION BAR (Luxury Style 02) */}
+      <nav className="fixed md:hidden bottom-4 left-3 right-3 z-40 max-w-[400px] mx-auto bg-[#4F2D1C]/95 backdrop-blur-md text-[#FFFFFF] p-1.5 border border-white/20 shadow-[0_16px_36px_-6px_rgba(45,28,20,0.5),0_6px_16px_-4px_rgba(45,28,20,0.35)] rounded-full">
+        <div className="grid grid-cols-4 gap-1 items-center">
           {/* Tab 1: Dashboard Overview */}
           <button
             type="button"
@@ -5211,14 +5181,14 @@ export default function AdminPage() {
               setActiveTab("overview");
               setIsMobileSidebarOpen(false);
             }}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeTab === "overview"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
             <LayoutGrid className="w-4 h-4 stroke-[2.2]" />
-            <span className="text-[10px] font-bold mt-1 truncate">
+            <span className="text-[10px] font-bold mt-0.5 leading-tight truncate">
               Overview
             </span>
           </button>
@@ -5230,14 +5200,14 @@ export default function AdminPage() {
               setActiveTab("welcome_cms");
               setIsMobileSidebarOpen(false);
             }}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeTab === "welcome_cms"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
             <Layout className="w-4 h-4 stroke-[2]" />
-            <span className="text-[10px] font-semibold mt-1 truncate">
+            <span className="text-[10px] font-semibold mt-0.5 leading-tight truncate">
               Welcome
             </span>
           </button>
@@ -5250,9 +5220,9 @@ export default function AdminPage() {
               setCatalogSubView("products");
               setIsMobileSidebarOpen(false);
             }}
-            className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeTab === "products" || activeTab === "categories"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
@@ -5264,7 +5234,7 @@ export default function AdminPage() {
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-semibold mt-1 truncate">
+            <span className="text-[10px] font-semibold mt-0.5 leading-tight truncate">
               Products
             </span>
           </button>
@@ -5276,9 +5246,9 @@ export default function AdminPage() {
               setActiveTab("orders");
               setIsMobileSidebarOpen(false);
             }}
-            className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeTab === "orders"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
@@ -5290,7 +5260,7 @@ export default function AdminPage() {
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-semibold mt-1 truncate">
+            <span className="text-[10px] font-semibold mt-0.5 leading-tight truncate">
               Orders
             </span>
           </button>

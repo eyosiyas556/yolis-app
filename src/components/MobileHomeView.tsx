@@ -596,7 +596,7 @@ export default function MobileHomeView() {
       </header>
 
       {/* 2. MAIN CONTENT */}
-      <main className="px-4 pt-3 space-y-4 flex-1">
+      <main className="px-4 pt-3 pb-24 space-y-4 flex-1">
         {activeBottomTab === "orders" ? (
           <div className="space-y-4 pt-1 animate-in fade-in duration-200">
             {/* Header: Title + Count + New Order link */}
@@ -1239,9 +1239,9 @@ export default function MobileHomeView() {
         )}
       </main>
 
-      {/* 3. FIXED BOTTOM NAVIGATION BAR (Matches Admin Panel Mobile Bottom Bar) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 max-w-[430px] mx-auto bg-[#4F2D1C] text-[#FFFFFF] px-2 py-2 border-t border-white/10 shadow-[0_-8px_24px_rgba(45,28,20,0.28)] rounded-t-2xl">
-        <div className="grid grid-cols-5 gap-1">
+      {/* 3. FLOATING PILL BOTTOM NAVIGATION BAR (Luxury Style 02) */}
+      <nav className="fixed bottom-4 left-3 right-3 z-40 max-w-[400px] mx-auto bg-[#4F2D1C]/95 backdrop-blur-md text-[#FFFFFF] p-1.5 border border-white/20 shadow-[0_16px_36px_-6px_rgba(45,28,20,0.5),0_6px_16px_-4px_rgba(45,28,20,0.35)] rounded-full">
+        <div className="grid grid-cols-5 gap-1 items-center">
           {/* 1. Home */}
           <button
             type="button"
@@ -1250,14 +1250,14 @@ export default function MobileHomeView() {
               document.getElementById("mobile-scroll-container")?.scrollTo({ top: 0, behavior: "smooth" });
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeBottomTab === "home"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
             <Home className="w-4 h-4 stroke-[2.2]" />
-            <span className="text-[10px] font-bold mt-1">Home</span>
+            <span className="text-[10px] font-bold mt-0.5 leading-tight">Home</span>
           </button>
 
           {/* 2. Products */}
@@ -1269,14 +1269,14 @@ export default function MobileHomeView() {
                 .getElementById("catalog-grid")
                 ?.scrollIntoView({ behavior: "smooth" });
             }}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeBottomTab === "products"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
             <LayoutGrid className="w-4 h-4 stroke-[2]" />
-            <span className="text-[10px] font-bold mt-1">Products</span>
+            <span className="text-[10px] font-bold mt-0.5 leading-tight">Products</span>
           </button>
 
           {/* 3. Wishlist */}
@@ -1288,9 +1288,9 @@ export default function MobileHomeView() {
                 .getElementById("catalog-grid")
                 ?.scrollIntoView({ behavior: "smooth" });
             }}
-            className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeBottomTab === "wishlist"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
@@ -1308,7 +1308,7 @@ export default function MobileHomeView() {
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-bold mt-1">Wishlist</span>
+            <span className="text-[10px] font-bold mt-0.5 leading-tight">Wishlist</span>
           </button>
 
           {/* 4. My Orders */}
@@ -1319,9 +1319,9 @@ export default function MobileHomeView() {
               document.getElementById("mobile-scroll-container")?.scrollTo({ top: 0, behavior: "smooth" });
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className={`relative flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeBottomTab === "orders"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
@@ -1333,7 +1333,7 @@ export default function MobileHomeView() {
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-bold mt-1">My Orders</span>
+            <span className="text-[10px] font-bold mt-0.5 leading-tight">My Orders</span>
           </button>
 
           {/* 5. Account */}
@@ -1343,14 +1343,14 @@ export default function MobileHomeView() {
               setActiveBottomTab("account");
               setIsAccountModalOpen(true);
             }}
-            className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all cursor-pointer ${
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-full transition-all cursor-pointer ${
               activeBottomTab === "account"
-                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-inner"
+                ? "bg-[#2D1C14] text-[#FFFFFF] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.45)] ring-1 ring-white/15"
                 : "text-white/75 hover:text-[#FFFFFF]"
             }`}
           >
             <User className="w-4 h-4 stroke-[2]" />
-            <span className="text-[10px] font-bold mt-1">Account</span>
+            <span className="text-[10px] font-bold mt-0.5 leading-tight">Account</span>
           </button>
         </div>
       </nav>

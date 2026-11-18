@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/mail";
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
 
     const cleanEmail = email?.trim().toLowerCase();
-    if (!cleanEmail) {
+    if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
       return NextResponse.json(
-        { error: "Please enter your registered email address." },
+        { error: "Please enter a valid registered email address (e.g. name@example.com)." },
         { status: 400 }
       );
     }

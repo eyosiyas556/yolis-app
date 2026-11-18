@@ -18,6 +18,31 @@ import {
   Phone,
 } from "lucide-react";
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+function validateEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email.trim());
+}
+
+// In register, user enters 9 digits starting strictly with 9 (e.g. 911234567 or 900000000)
+function validateRegisterPhone(phone: string): boolean {
+  const digits = phone.trim().replace(/\D/g, "");
+  return /^9\d{8}$/.test(digits);
+}
+
+// In login, user can enter email OR phone number starting with 9:
+function validateLoginPhone(phone: string): boolean {
+  const clean = phone.trim();
+  const digits = clean.replace(/\D/g, "");
+  if (clean.startsWith("+251") || digits.startsWith("251")) {
+    return /^2519\d{8}$/.test(digits);
+  }
+  if (digits.startsWith("09")) {
+    return /^09\d{8}$/.test(digits);
+  }
+  return /^9\d{8}$/.test(digits);
+}
+
 export default function AuthModal() {
   const router = useRouter();
   const {
@@ -115,6 +140,27 @@ export default function AuthModal() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+
+    const identifier = loginIdentifier.trim();
+    if (!identifier) {
+      setErrorMsg("Please enter your Phone number or Email address.");
+      return;
+    }
+
+    const isEmailInput = identifier.includes("@") || /[a-zA-Z]/.test(identifier);
+
+    if (isEmailInput) {
+      if (!validateEmail(identifier)) {
+        setErrorMsg("Please enter a valid email address (e.g. name@gmail.com).");
+        return;
+      }
+    } else {
+      if (!validateLoginPhone(identifier)) {
+        setErrorMsg("Please enter a valid Ethiopian phone number starting with 9 (e.g. 0911 234 567 or 911 234 567).");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -234,8 +280,13 @@ export default function AuthModal() {
     setErrorMsg("");
 
     const digitsOnly = regPhone.trim();
-    if (!digitsOnly || digitsOnly.length < 9) {
-      setErrorMsg("Please enter a valid 9-digit Ethiopian mobile number (e.g. 911 234 567).");
+    if (!validateRegisterPhone(digitsOnly)) {
+      setErrorMsg("Please enter a valid 9-digit Ethiopian mobile number starting with 9 (e.g. 911 234 567).");
+      return;
+    }
+
+    if (!validateEmail(regEmail)) {
+      setErrorMsg("Please enter a real, valid email address (e.g. name@gmail.com).");
       return;
     }
 
@@ -322,6 +373,12 @@ export default function AuthModal() {
     if (e) e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
+
+    if (!validateEmail(resetEmail)) {
+      setErrorMsg("Please enter a valid registered email address (e.g. name@gmail.com).");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -686,15 +743,15 @@ export default function AuthModal() {
                 <input
                   type="tel"
                   required
-                  placeholder="9... or 7..."
+                  placeholder="9XXXXXXXX (e.g. 911 234 567)"
                   value={regPhone}
                   onChange={(e) => handleRegPhoneChange(e.target.value)}
-                  maxLength={10}
+                  maxLength={9}
                   className="w-full pl-22 pr-3.5 py-2.5 bg-[#FAF6F0] border border-[#4F2D1C]/15 rounded-xl text-xs font-semibold text-[#4F2D1C] placeholder-[#4F2D1C]/40 focus:outline-none focus:border-[#4F2D1C]"
                 />
               </div>
               <p className="text-[10px] text-[#4F2D1C]/60 mt-1 pl-1">
-                Enter your 9-digit mobile number (e.g. 911 234 567)
+                Enter your 9-digit mobile number starting with 9 (e.g. 911 234 567)
               </p>
             </div>
 
