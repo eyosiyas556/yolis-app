@@ -34,19 +34,31 @@ function HomePageContent() {
       const stored = typeof window !== "undefined" ? localStorage.getItem("yolanda_customer") : null;
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.role === "ADMIN" || parsed?.email?.toLowerCase() === "admin@yolandabeauty.com") {
+        const isStoredAdmin =
+          parsed?.role === "ADMIN" ||
+          parsed?.email?.toLowerCase() === "yolandabeauty@gmail.com" ||
+          parsed?.email?.toLowerCase() === "admin@yolandabeauty.com";
+        if (isStoredAdmin) {
           router.replace("/admin");
           return;
         }
       }
     } catch {}
 
-    if (!isAuthLoading && currentUser?.role === "ADMIN") {
+    const isCurrentAdmin =
+      currentUser?.role === "ADMIN" ||
+      currentUser?.email?.toLowerCase() === "yolandabeauty@gmail.com" ||
+      currentUser?.email?.toLowerCase() === "admin@yolandabeauty.com";
+    if (!isAuthLoading && isCurrentAdmin) {
       router.replace("/admin");
     }
   }, [currentUser, isAuthLoading, router]);
 
-  if (!isAuthLoading && currentUser?.role === "ADMIN") {
+  const isCurrentAdmin =
+    currentUser?.role === "ADMIN" ||
+    currentUser?.email?.toLowerCase() === "yolandabeauty@gmail.com" ||
+    currentUser?.email?.toLowerCase() === "admin@yolandabeauty.com";
+  if (!isAuthLoading && isCurrentAdmin) {
     return <HomeSkeleton />;
   }
 

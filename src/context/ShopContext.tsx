@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { Product, PRODUCTS, Category, CATEGORIES, BankSettings, INITIAL_BANK_SETTINGS } from "../data/mockData";
+import { emitRealtimeEvent, subscribeRealtimeEvent } from "@/lib/realtime";
 
 export interface OrderItem {
   product: Product;
@@ -320,13 +321,26 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isOfficialAdmin = (email?: string, role?: string) => {
+    const e = (email || "").toLowerCase().trim();
+    return role === "ADMIN" || e === "yolandabeauty@gmail.com" || e === "admin@yolandabeauty.com";
+  };
+
   const setAuthenticatedUser = (user: CustomerUser) => {
-    setCurrentUser(user);
-    if (user.role !== "ADMIN") {
+    const isAdmin = isOfficialAdmin(user.email, user.role);
+    const finalUser: CustomerUser = {
+      ...user,
+      role: isAdmin ? "ADMIN" : user.role || "CUSTOMER",
+    };
+    setCurrentUser(finalUser);
+    localStorage.setItem("yolanda_customer", JSON.stringify(finalUser));
+    setIsAuthModalOpen(false);
+
+    if (isAdmin && typeof window !== "undefined") {
+      window.location.href = "/admin";
+    } else {
       setActiveNavTab("Shop");
     }
-    localStorage.setItem("yolanda_customer", JSON.stringify(user));
-    setIsAuthModalOpen(false);
   };
 
   // Load user from localStorage on mount & seed demo account if empty
@@ -335,8 +349,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem("yolanda_customer");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.email?.toLowerCase() !== "admin@yolandabeauty.com" && parsed.role === "ADMIN") {
-          parsed.role = "CUSTOMER";
+        if (isOfficialAdmin(parsed.email, parsed.role)) {
+          parsed.role = "ADMIN";
           localStorage.setItem("yolanda_customer", JSON.stringify(parsed));
         }
         setCurrentUser(parsed);
@@ -349,21 +363,20 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (!rawAccounts) {
         const defaultAccounts: StoredAccount[] = [
           {
-            fullName: "Salon Owner",
-            phone: "+251911234567",
-            email: "owner@yolanda.et",
-            passwordHash: "password123",
-            role: "CUSTOMER",
-          },
-          {
             fullName: "Yolanda Admin",
-            phone: "+251911234567",
-            email: "admin@yolandabeauty.com",
+            phone: "+251948325861",
+            email: "yolandabeauty@gmail.com",
             passwordHash: "admin123",
             role: "ADMIN",
           },
         ];
         localStorage.setItem("yolanda_accounts", JSON.stringify(defaultAccounts));
+      } else {
+        try {
+          const accounts: StoredAccount[] = JSON.parse(rawAccounts);
+          const filtered = accounts.filter((a) => a.role === "ADMIN" || a.email.toLowerCase() === "admin@yolandabeauty.com" || a.email.toLowerCase() === "yolandabeauty@gmail.com");
+          localStorage.setItem("yolanda_accounts", JSON.stringify(filtered));
+        } catch {}
       }
     } catch {
       // ignore
@@ -456,11 +469,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const role =
-        match.role ||
-        (match.email.toLowerCase() === "admin@yolandabeauty.com"
-          ? "ADMIN"
-          : "CUSTOMER");
+      const role = isOfficialAdmin(match.email, match.role) ? "ADMIN" : "CUSTOMER";
 
       const userObj: CustomerUser = {
         fullName: match.fullName,
@@ -647,99 +656,232 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   }, [currentUser?.email]);
 
+  const mapDbStatusToCustomerStatus = (statusStr: string): OrderStatus => {
+    const up = (statusStr || "").toUpperCase();
+    if (
+      up.includes("CONFIRM") ||
+      up.includes("APPROV") ||
+      up.includes("COMPLET") ||
+      up.includes("DELIVER")
+    ) {
+      return "Payment Approved";
+    }
+    if (
+      up.includes("PROGRESS") ||
+      up.includes("REVIEW") ||
+      up.includes("STOCK") ||
+      up.includes("CONTACT")
+    ) {
+      return "In Progress";
+    }
+    if (up.includes("CANCEL") || up.includes("REJECT")) {
+      return "Payment Rejected";
+    }
+    return "Pending Verification";
+  };
+
   // Fetch real orders strictly for current signed-in user
-  useEffect(() => {
-    const fetchUserOrders = async () => {
-      // If not logged in, customer has zero orders
-      if (!currentUser?.email && !currentUser?.phone) {
-        setOrders([]);
+  const fetchUserOrders = useCallback(async (silent = false) => {
+    if (!currentUser?.email && !currentUser?.phone) {
+      if (!silent) setOrders([]);
+      return;
+    }
+
+    const email = currentUser?.email?.toLowerCase().trim() || "";
+    const phone = currentUser?.phone?.trim() || "";
+
+    try {
+      const params = new URLSearchParams();
+      if (email) params.set("email", email);
+      if (phone) params.set("phone", phone);
+
+      const res = await fetch(`/api/orders?${params.toString()}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.orders)) {
+        const mappedOrders: Order[] = data.orders.map((dbOrder: any) => ({
+          id: dbOrder.orderNumber || dbOrder.id,
+          customer: {
+            salonName: dbOrder.salonName,
+            contactPerson: dbOrder.contactPerson,
+            phone: dbOrder.phone,
+            address: dbOrder.address,
+            city: dbOrder.city,
+          },
+          items: (dbOrder.items || []).map((i: any) => ({
+            product: i.product || {
+              id: i.productId || "item-1",
+              name: "Salon Equipment",
+              category: "Equipment",
+              subtitle: "",
+              price: i.price,
+              rating: 5,
+              reviewsCount: 1,
+              image: "/hero-bg.jpg",
+              inStock: true,
+              specs: { warranty: "1-Year Warranty", grade: "Commercial" },
+              benefits: [],
+              description: "",
+            },
+            quantity: i.quantity,
+          })),
+          total: dbOrder.totalAmount,
+          paymentMethod: dbOrder.paymentMethod as any,
+          transactionNumber: dbOrder.transactionNumber,
+          receiptImage: dbOrder.receiptImageUrl,
+          status: mapDbStatusToCustomerStatus(dbOrder.status),
+          createdAt: dbOrder.createdAt,
+          rejectionReason: dbOrder.rejectionReason,
+        }));
+
+        setOrders((prev) => {
+          if (prev.length === mappedOrders.length) {
+            const hasChange = mappedOrders.some((newO, idx) => {
+              const oldO = prev[idx];
+              return !oldO || oldO.id !== newO.id || oldO.status !== newO.status;
+            });
+            if (!hasChange) return prev;
+          }
+          return mappedOrders;
+        });
+
+        // Also sync trackingOrder if open
+        setTrackingOrder((prev) => {
+          if (!prev) return null;
+          const fresh = mappedOrders.find(
+            (o) => o.id === prev.id || o.transactionNumber === prev.transactionNumber
+          );
+          return fresh ? fresh : prev;
+        });
+
         return;
       }
+    } catch (err) {
+      if (!silent) console.error("Failed to load remote orders:", err);
+    }
 
-      const email = currentUser?.email?.toLowerCase().trim() || "";
-      const phone = currentUser?.phone?.trim() || "";
-
-      try {
-        const params = new URLSearchParams();
-        if (email) params.set("email", email);
-        if (phone) params.set("phone", phone);
-
-        const res = await fetch(`/api/orders?${params.toString()}`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.orders)) {
-          const mappedOrders: Order[] = data.orders.map((dbOrder: any) => ({
-            id: dbOrder.orderNumber || dbOrder.id,
-            customer: {
-              salonName: dbOrder.salonName,
-              contactPerson: dbOrder.contactPerson,
-              phone: dbOrder.phone,
-              address: dbOrder.address,
-              city: dbOrder.city,
-            },
-            items: (dbOrder.items || []).map((i: any) => ({
-              product: i.product || {
-                id: i.productId || "item-1",
-                name: "Salon Equipment",
-                category: "Equipment",
-                subtitle: "",
-                price: i.price,
-                rating: 5,
-                reviewsCount: 1,
-                image: "/hero-bg.jpg",
-                inStock: true,
-                specs: { warranty: "1-Year Warranty", grade: "Commercial" },
-                benefits: [],
-                description: "",
-              },
-              quantity: i.quantity,
-            })),
-            total: dbOrder.totalAmount,
-            paymentMethod: dbOrder.paymentMethod as any,
-            transactionNumber: dbOrder.transactionNumber,
-            receiptImage: dbOrder.receiptImageUrl,
-            status:
-              dbOrder.status === "CONFIRMED" ||
-              dbOrder.status === "PAYMENT_APPROVED" ||
-              dbOrder.status === "COMPLETED" ||
-              dbOrder.status === "DELIVERED"
-                ? "Payment Approved"
-                : dbOrder.status === "IN_PROGRESS" ||
-                  dbOrder.status === "STOCK_REVIEW" ||
-                  dbOrder.status === "CONTACTED"
-                ? "In Progress"
-                : dbOrder.status === "CANCELLED" ||
-                  dbOrder.status === "PAYMENT_REJECTED"
-                ? "Payment Rejected"
-                : "Pending Verification",
-            createdAt: dbOrder.createdAt,
-            rejectionReason: dbOrder.rejectionReason,
-          }));
-
-          setOrders(mappedOrders);
+    // Fallback: check local storage strictly for this customer's placed orders
+    try {
+      if (email) {
+        const localKey = `yolanda_orders_${email}`;
+        const stored = localStorage.getItem(localKey);
+        if (stored) {
+          setOrders(JSON.parse(stored));
           return;
         }
-      } catch (err) {
-        console.error("Failed to load remote orders:", err);
       }
+      if (!silent) setOrders([]);
+    } catch {
+      if (!silent) setOrders([]);
+    }
+  }, [currentUser]);
 
-      // Fallback: check local storage strictly for this customer's placed orders
-      try {
-        if (email) {
-          const localKey = `yolanda_orders_${email}`;
-          const stored = localStorage.getItem(localKey);
-          if (stored) {
-            setOrders(JSON.parse(stored));
-            return;
+  // Initial and reactive load on currentUser change
+  useEffect(() => {
+    fetchUserOrders(false);
+  }, [fetchUserOrders]);
+
+  // Real-time synchronization subscription (BroadcastChannel & storage bus)
+  useEffect(() => {
+    const unsubscribe = subscribeRealtimeEvent((event) => {
+      if (event.type === "ORDER_STATUS_CHANGED") {
+        const targetId = event.orderId;
+        const targetNum = event.orderNumber || event.order?.orderNumber;
+        const newStatus = mapDbStatusToCustomerStatus(event.status);
+
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (
+              o.id === targetId ||
+              o.id === targetNum ||
+              (targetNum && o.id.includes(targetNum)) ||
+              (event.order && o.id === event.order.id)
+            ) {
+              return {
+                ...o,
+                status: newStatus,
+                rejectionReason:
+                  event.rejectionReason !== undefined
+                    ? event.rejectionReason
+                    : o.rejectionReason,
+              };
+            }
+            return o;
+          })
+        );
+
+        setTrackingOrder((prev) => {
+          if (!prev) return null;
+          if (
+            prev.id === targetId ||
+            prev.id === targetNum ||
+            (targetNum && prev.id.includes(targetNum)) ||
+            (event.order && prev.id === event.order.id)
+          ) {
+            return {
+              ...prev,
+              status: newStatus,
+              rejectionReason:
+                event.rejectionReason !== undefined
+                  ? event.rejectionReason
+                  : prev.rejectionReason,
+            };
           }
-        }
-        setOrders([]);
-      } catch {
-        setOrders([]);
+          return prev;
+        });
+
+        setLastOrder((prev) => {
+          if (!prev) return null;
+          if (
+            prev.id === targetId ||
+            prev.id === targetNum ||
+            (targetNum && prev.id.includes(targetNum)) ||
+            (event.order && prev.id === event.order.id)
+          ) {
+            return {
+              ...prev,
+              status: newStatus,
+              rejectionReason:
+                event.rejectionReason !== undefined
+                  ? event.rejectionReason
+                  : prev.rejectionReason,
+            };
+          }
+          return prev;
+        });
+
+        // Silently pull fresh DB state to ensure complete reconciliation
+        fetchUserOrders(true);
+      } else if (event.type === "ORDER_CREATED") {
+        fetchUserOrders(true);
       }
+    });
+
+    return () => unsubscribe();
+  }, [fetchUserOrders]);
+
+  // Auto-poll silently every 4 seconds when user is logged in
+  useEffect(() => {
+    if (!currentUser?.email && !currentUser?.phone) return;
+
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchUserOrders(true);
+      }
+    }, 4000);
+
+    const handleFocus = () => {
+      fetchUserOrders(true);
     };
 
-    fetchUserOrders();
-  }, [currentUser]);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, [currentUser, fetchUserOrders]);
 
   const saveCartLocally = (newCart: OrderItem[]) => {
     if (typeof window !== "undefined" && currentUser?.email) {
@@ -871,6 +1013,31 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     setIsCheckoutOpen(false);
     setIsOrderSuccessOpen(true);
 
+    // Instant real-time broadcast to admin and other windows
+    emitRealtimeEvent({
+      type: "ORDER_CREATED",
+      order: {
+        id: orderNumber,
+        orderNumber,
+        salonName: orderData.salonName,
+        contactPerson: orderData.contactPerson,
+        phone: orderData.phone,
+        address: orderData.address,
+        city: orderData.city,
+        totalAmount: cartTotal,
+        paymentMethod: "Direct Order",
+        transactionNumber: `REQ-${orderNumber}`,
+        status: "NEW_ORDER",
+        createdAt: newOrder.createdAt,
+        items: cart.map((i) => ({
+          productId: i.product.id,
+          quantity: i.quantity,
+          price: i.product.price,
+          product: i.product,
+        })),
+      },
+    });
+
     // Save strictly to this customer's localStorage key
     if (currentUser?.email) {
       try {
@@ -883,31 +1050,39 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Persist to database in background
-    try {
-      await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          salonName: orderData.salonName,
-          contactPerson: orderData.contactPerson,
-          phone: orderData.phone,
-          address: orderData.address,
-          city: orderData.city,
-          items: cart.map((i) => ({
-            productId: i.product.id,
-            quantity: i.quantity,
-            price: i.product.price,
-          })),
-          totalAmount: cartTotal,
-          paymentMethod: "Direct Order",
-          transactionNumber: `REQ-${orderNumber}`,
-          userEmail: currentUser?.email?.toLowerCase().trim(),
-        }),
+    // Persist to database in background without blocking UI
+    fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        salonName: orderData.salonName,
+        contactPerson: orderData.contactPerson,
+        phone: orderData.phone,
+        address: orderData.address,
+        city: orderData.city,
+        items: cart.map((i) => ({
+          productId: i.product.id,
+          quantity: i.quantity,
+          price: i.product.price,
+        })),
+        totalAmount: cartTotal,
+        paymentMethod: "Direct Order",
+        transactionNumber: `REQ-${orderNumber}`,
+        userEmail: currentUser?.email?.toLowerCase().trim(),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data?.order) {
+          emitRealtimeEvent({
+            type: "ORDER_CREATED",
+            order: data.order,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("DB order sync error:", err);
       });
-    } catch (err) {
-      console.error("DB order sync error:", err);
-    }
 
     return newOrder;
   };

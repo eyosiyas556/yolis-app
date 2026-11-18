@@ -284,7 +284,7 @@ export default function ProductDetailModal() {
               <button
                 type="button"
                 onClick={handleAdd}
-                className="flex-1 py-2.5 sm:py-3 px-4 rounded-full bg-[#4F2D1C] hover:bg-[#2D1C14] text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-[0_6px_14px_rgba(79,45,28,0.22),inset_0_1px_2px_rgba(255,255,255,0.2)] active:scale-[0.98] cursor-pointer"
+                className="flex-1 py-2.5 sm:py-3 px-4 rounded-full bg-[#4F2D1C] hover:bg-[#2D1C14] text-white text-xs font-bold transition-all duration-75 active:scale-95 flex items-center justify-center gap-2 shadow-[0_6px_14px_rgba(79,45,28,0.22),inset_0_1px_2px_rgba(255,255,255,0.2)] cursor-pointer"
               >
                 <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">

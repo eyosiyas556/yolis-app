@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { useShop, DEFAULT_WELCOME_SETTINGS } from "@/context/ShopContext";
 import AdminSkeleton from "@/components/AdminSkeleton";
+import { emitRealtimeEvent, subscribeRealtimeEvent } from "@/lib/realtime";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -81,6 +82,7 @@ export default function AdminPage() {
           const parsed = JSON.parse(stored);
           return (
             parsed?.role === "ADMIN" ||
+            parsed?.email?.toLowerCase() === "yolandabeauty@gmail.com" ||
             parsed?.email?.toLowerCase() === "admin@yolandabeauty.com"
           );
         }
@@ -93,6 +95,7 @@ export default function AdminPage() {
     if (!isAuthLoading) {
       setHasStoredAdminSession(
         currentUser?.role === "ADMIN" ||
+        currentUser?.email?.toLowerCase() === "yolandabeauty@gmail.com" ||
         currentUser?.email?.toLowerCase() === "admin@yolandabeauty.com"
       );
     }
@@ -619,8 +622,20 @@ export default function AdminPage() {
       const res = await fetch("/api/orders?all=true");
       if (res.ok) {
         const ordData = await res.json();
-        if (ordData.orders) {
-          setOrders(ordData.orders);
+        if (ordData.orders && Array.isArray(ordData.orders)) {
+          setOrders((prev) => {
+            if (prev.length === ordData.orders.length) {
+              const hasDiff = ordData.orders.some((newO: any, idx: number) => {
+                const oldO = prev[idx];
+                return !oldO || oldO.id !== newO.id || oldO.status !== newO.status;
+              });
+              if (!hasDiff) return prev;
+            }
+            try {
+              localStorage.setItem("yolanda_admin_orders_cache", JSON.stringify(ordData.orders));
+            } catch {}
+            return ordData.orders;
+          });
         }
       }
     } catch (e) {
@@ -655,6 +670,74 @@ export default function AdminPage() {
       fetchAllData();
     }
   }, [currentUser]);
+
+  // Real-time synchronization for orders & actions without refresh
+  useEffect(() => {
+    const unsubscribe = subscribeRealtimeEvent((event) => {
+      if (event.type === "ORDER_CREATED" && event.order) {
+        setOrders((prev) => {
+          const newOrd = event.order;
+          const exists = prev.some(
+            (o) =>
+              o.id === newOrd.id ||
+              (newOrd.orderNumber && o.orderNumber === newOrd.orderNumber)
+          );
+          if (exists) {
+            return prev.map((o) =>
+              o.id === newOrd.id ||
+              (newOrd.orderNumber && o.orderNumber === newOrd.orderNumber)
+                ? { ...o, ...newOrd }
+                : o
+            );
+          }
+          const salon = newOrd.salonName || newOrd.customer?.salonName || "Salon Client";
+          showNotification(
+            "success",
+            `New order #${newOrd.orderNumber || newOrd.id} submitted by ${salon}!`
+          );
+          const next = [newOrd, ...prev];
+          try {
+            localStorage.setItem("yolanda_admin_orders_cache", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      } else if (event.type === "ORDER_STATUS_CHANGED") {
+        setOrders((prev) => {
+          const updated = prev.map((o) =>
+            o.id === event.orderId ||
+            (event.orderNumber && o.orderNumber === event.orderNumber)
+              ? { ...o, status: event.status, rejectionReason: event.rejectionReason }
+              : o
+          );
+          try {
+            localStorage.setItem("yolanda_admin_orders_cache", JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      }
+    });
+
+    // Auto-poll silently every 3.5s so orders stay fresh in real-time across devices
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        fetchOrdersData();
+      }
+    }, 3500);
+
+    const handleFocus = () => {
+      fetchOrdersData();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
 
   // Handle Product CRUD
   const handleOpenAddProduct = () => {
@@ -945,6 +1028,8 @@ export default function AdminPage() {
 
   // Handle Order Status Update (Instant 0ms Optimistic Update)
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const existingOrd = orders.find((o) => o.id === orderId);
+
     // 1. Instant optimistic state & local cache update
     setOrders((prev) => {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
@@ -954,13 +1039,21 @@ export default function AdminPage() {
       return updated;
     });
 
+    // 2. Real-time broadcast to customer & other tabs
+    emitRealtimeEvent({
+      type: "ORDER_STATUS_CHANGED",
+      orderId,
+      orderNumber: existingOrd?.orderNumber,
+      status: newStatus,
+    });
+
     const statusLabel =
       newStatus === "CONFIRMED" ? "Confirmed" :
       newStatus === "IN_PROGRESS" ? "In Review" :
       newStatus === "CANCELLED" ? "Cancelled" : "Pending";
     showNotification("success", `Status updated to ${statusLabel}.`);
 
-    // 2. Persist to database in background
+    // 3. Persist to database in background
     try {
       const res = await fetch("/api/orders", {
         method: "PUT",
@@ -969,6 +1062,17 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update order status.");
+
+      if (data?.order) {
+        emitRealtimeEvent({
+          type: "ORDER_STATUS_CHANGED",
+          orderId: data.order.id,
+          orderNumber: data.order.orderNumber,
+          status: data.order.status,
+          rejectionReason: data.order.rejectionReason,
+          order: data.order,
+        });
+      }
     } catch (err: any) {
       showNotification("error", err.message || "Failed to save order status update.");
       fetchAllData();
@@ -3319,7 +3423,7 @@ export default function AdminPage() {
                           <button
                             type="button"
                             onClick={() => setActiveOrderActionId(activeOrderActionId === ord.id ? null : ord.id)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-[#FAF6F0] hover:bg-[#FAF6F0]/90 border border-[#4F2D1C]/15 shadow-2xs transition cursor-pointer ${
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-[#FAF6F0] hover:bg-[#FAF6F0]/90 border border-[#4F2D1C]/15 shadow-2xs transition cursor-pointer active:scale-95 duration-75 ${
                               ord.status === "CONFIRMED" || ord.status === "PAYMENT_APPROVED" || ord.status === "COMPLETED" || ord.status === "DELIVERED"
                                 ? "text-emerald-700"
                                 : ord.status === "IN_PROGRESS" || ord.status === "STOCK_REVIEW" || ord.status === "CONTACTED"
@@ -3356,7 +3460,7 @@ export default function AdminPage() {
                                     setActiveOrderActionId(null);
                                     handleUpdateOrderStatus(ord.id, item.value);
                                   }}
-                                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold hover:bg-white text-left transition cursor-pointer"
+                                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold hover:bg-white text-left transition cursor-pointer active:scale-95 duration-75"
                                 >
                                   <span className={item.color}>{item.label}</span>
                                   {((item.value === "CONFIRMED" && (ord.status === "CONFIRMED" || ord.status === "PAYMENT_APPROVED" || ord.status === "COMPLETED" || ord.status === "DELIVERED")) ||

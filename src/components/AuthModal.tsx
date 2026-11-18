@@ -204,6 +204,7 @@ export default function AuthModal() {
 
         const isAdmin =
           userObj.role === "ADMIN" ||
+          userObj.email.toLowerCase() === "yolandabeauty@gmail.com" ||
           userObj.email.toLowerCase() === "admin@yolandabeauty.com";
 
         setIsAuthModalOpen(false);
@@ -223,6 +224,7 @@ export default function AuthModal() {
       if (localRes.success) {
         const isAdmin =
           localRes.user?.role === "ADMIN" ||
+          localRes.user?.email.toLowerCase() === "yolandabeauty@gmail.com" ||
           localRes.user?.email.toLowerCase() === "admin@yolandabeauty.com";
 
         setIsAuthModalOpen(false);
@@ -244,6 +246,7 @@ export default function AuthModal() {
       if (localRes.success) {
         const isAdmin =
           localRes.user?.role === "ADMIN" ||
+          localRes.user?.email.toLowerCase() === "yolandabeauty@gmail.com" ||
           localRes.user?.email.toLowerCase() === "admin@yolandabeauty.com";
 
         setIsAuthModalOpen(false);

@@ -204,10 +204,19 @@ export default function CheckoutModal() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3.5 rounded-full bg-[#4F2D1C] hover:bg-[#4F2D1C] text-white shadow-[0_6px_14px_rgba(79,45,28,0.22)] active:scale-[0.98] text-xs font-bold transition flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-full bg-[#4F2D1C] hover:bg-[#2D1C14] text-white shadow-[0_6px_14px_rgba(79,45,28,0.22)] active:scale-95 text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
             >
-              <span>{isSubmitting ? "Submitting Order..." : `Submit Order • ETB ${cartTotal.toLocaleString()}`}</span>
-              <ArrowRight className="w-4 h-4" />
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Submitting Order...</span>
+                </>
+              ) : (
+                <>
+                  <span>Submit Order • ETB {cartTotal.toLocaleString()}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
             <p className="text-[10px] text-center text-[#4F2D1C]/70 mt-2">
               Our salon support team will contact you directly by phone to confirm your order.

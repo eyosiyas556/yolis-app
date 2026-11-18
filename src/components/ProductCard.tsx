@@ -128,7 +128,7 @@ export default function ProductCard({ product }: { product: Product }) {
           type="button"
           onClick={handleAddToCart}
           disabled={product.inStock === false}
-          className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer ${
+          className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-75 active:scale-95 cursor-pointer ${
             product.inStock === false
               ? "bg-stone-200 text-stone-500 cursor-not-allowed"
               : justAdded

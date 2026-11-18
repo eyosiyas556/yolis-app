@@ -116,13 +116,13 @@ export default function RightShowcase() {
           <div className="flex items-center gap-1">
             <button
               onClick={prevReview}
-              className="w-6 h-6 rounded-full bg-[#FAF6F0] hover:bg-stone-200 flex items-center justify-center text-[#4F2D1C] transition cursor-pointer"
+              className="w-6 h-6 rounded-full bg-[#FAF6F0] hover:bg-stone-200 active:scale-90 flex items-center justify-center text-[#4F2D1C] transition cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={nextReview}
-              className="w-6 h-6 rounded-full bg-[#FAF6F0] hover:bg-stone-200 flex items-center justify-center text-[#4F2D1C] transition cursor-pointer"
+              className="w-6 h-6 rounded-full bg-[#FAF6F0] hover:bg-stone-200 active:scale-90 flex items-center justify-center text-[#4F2D1C] transition cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>

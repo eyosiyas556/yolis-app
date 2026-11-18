@@ -79,8 +79,9 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { adminEmail, settings } = body;
 
-    // Security check: Only Yolanda (admin@yolandabeauty.com) can update settings
-    if (adminEmail && adminEmail.toLowerCase() !== "admin@yolandabeauty.com") {
+    // Security check: Only Yolanda Admin can update settings
+    const cleanEmail = (adminEmail || "").toLowerCase().trim();
+    if (adminEmail && cleanEmail !== "admin@yolandabeauty.com" && cleanEmail !== "yolandabeauty@gmail.com") {
       return NextResponse.json(
         { error: "Unauthorized: Only Yolanda Admin can edit welcome page." },
         { status: 403 }
